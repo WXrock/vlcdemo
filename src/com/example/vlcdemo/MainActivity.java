@@ -42,11 +42,18 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity implements IVideoPlayer {
 
-	String TAG = "Lee";
+	String TAG = "MAIN";
 
+	
+	private Button mPreviewBut;
+	private Button mChangeBut;
+	private Button mTakeBut;
+	private Button mViewBut;
+	private EditText mipEditText;
+	private Button mConnectBut;
 	private SurfaceView surfaceView;
-
 	private SurfaceHolder surfaceHolder;
+	
 	private LibVLC mLibVLC;
 	private int savedIndexPosition = -1;
 	private AudioManager mAudioManager;
@@ -92,29 +99,12 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	boolean connected = false;
 	DisplayMetrics dm = null;
 
-	private String ip_adress;
-
-	private EditText ip;
-	private Button con;
+	private String ip_adress; //id address of 536;
 	InputMethodManager inputmanger;
+	
+	private final VideoEventHandler mEventHandler = new VideoEventHandler(this);
+	private final Handler mHandler = new VideoPlayerHandler(this);
 
-	@Override
-	protected void onDestroy() {
-		// TODO Auto-generated method stub
-		super.onDestroy();
-
-		EventHandler em = EventHandler.getInstance();
-		em.removeHandler(mHandler);
-		mLibVLC.eventVideoPlayerActivityCreated(false);
-		mLibVLC.stop();
-		mLibVLC.clearBuffer();
-		mLibVLC.destroy();
-		mLibVLC.closeAout();
-		mLibVLC.detachSurface();
-		mLibVLC.stopDebugBuffer();
-		android.os.Process.killProcess(android.os.Process.myPid());
-
-	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -122,34 +112,19 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		setContentView(R.layout.activity_main);
 
 		inputmanger = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-		ip = (EditText) findViewById(R.id.ip);
-		con = (Button) findViewById(R.id.btn_CON);
-
-		// getWindowManager().getDefaultDisplay().getMetrics(dm);
-		// hostw = dm.widthPixels;
-		// hosth = dm.heightPixels;
+		mipEditText = (EditText) findViewById(R.id.ip);
+		mConnectBut = (Button) findViewById(R.id.btn_CON);
+		mPreviewBut = (Button) findViewById(R.id.preiew);
+		mChangeBut = (Button) findViewById(R.id.changeCam);
+		mTakeBut = (Button) findViewById(R.id.takePic);
+		mViewBut = (Button) findViewById(R.id.viewPic);
 
 		surfaceView = (SurfaceView) findViewById(R.id.surfaceView1);
 		surfaceHolder = surfaceView.getHolder();
 		surfaceHolder.addCallback(mSurfaceCallback);
 		surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
-		// surfaceView2 = (SurfaceView) findViewById(R.id.surfaceView2);
-		// surfaceHolder2 = surfaceView2.getHolder();
-		// surfaceHolder2.addCallback(Surfaceview2Callback);
-		// surfaceHolder2.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		//
-		// surfaceView3 = (SurfaceView) findViewById(R.id.surfaceView3);
-		// surfaceHolder3 = surfaceView3.getHolder();
-		// surfaceHolder3.addCallback(Surfaceview3Callback);
-		// surfaceHolder3.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		//
-		// surfaceView4 = (SurfaceView) findViewById(R.id.surfaceView4);
-		// surfaceHolder4 = surfaceView4.getHolder();
-		// surfaceHolder4.addCallback(Surfaceview4Callback);
-		// surfaceHolder4.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
 		surfaceView.setKeepScreenOn(true);
+		
 		SharedPreferences pref = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		int pitch;
@@ -171,7 +146,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		mSurfaceAlign = 16 / pitch - 1;
 		// LibVLC.useIOMX(getApplicationContext());
 		try {
-
 			mLibVLC = VLCInstance.getLibVlcInstance();
 		} catch (LibVlcException e) {
 			Log.i(TAG, "LibVLC.getInstance() error:" + e.toString());
@@ -185,19 +159,20 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		eventandler = EventHandler.getInstance();
 		eventandler.addHandler(mEventHandler);
 
-		Buttonclick btnclick = new Buttonclick();
-
-		con.setOnClickListener(btnclick);
-
-		ip.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+		mConnectBut.setOnClickListener(new ConnectButonclick());
+		mPreviewBut.setOnClickListener(new previewButonclick());
+		mChangeBut.setOnClickListener(new changeCamButonclick());
+		mTakeBut.setOnClickListener(new takePicButonclick());
+		mViewBut.setOnClickListener(new ViewButonclick());
+		mipEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
 
 			@Override
 			public boolean onEditorAction(TextView v, int actionId,
 					KeyEvent event) {
 				// TODO Auto-generated method stub
 				if (actionId == EditorInfo.IME_ACTION_DONE) {
-					inputmanger.hideSoftInputFromWindow(ip.getWindowToken(), 0);
-					ip_adress = ip.getText().toString();
+					inputmanger.hideSoftInputFromWindow(mipEditText.getWindowToken(), 0);
+					ip_adress = mipEditText.getText().toString();
 
 					return true;
 				}
@@ -208,22 +183,48 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 	}
 
-	class Buttonclick implements Button.OnClickListener {
+	class ConnectButonclick implements Button.OnClickListener {
 
 		@Override
 		public void onClick(View v) {
-			// TODO Auto-generated method stub
+			ip_adress = mipEditText.getText().toString();
+			//playvideo();
+			inputmanger.hideSoftInputFromWindow(mipEditText.getWindowToken(), 0);
+		}
 
-			switch (v.getId()) {
-			case R.id.btn_CON:
-				ip_adress = ip.getText().toString();
-				playvideo();
-				inputmanger.hideSoftInputFromWindow(ip.getWindowToken(), 0);
-				break;
+	}
+	
+	class previewButonclick implements Button.OnClickListener {
 
-			default:
-				break;
-			}
+		@Override
+		public void onClick(View v) {
+			playvideo();
+		}
+
+	}
+	
+	class changeCamButonclick implements Button.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+
+		}
+
+	}
+	
+	class takePicButonclick implements Button.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+
+		}
+
+	}
+	
+	class ViewButonclick implements Button.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
 
 		}
 
@@ -250,24 +251,14 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 	public Void playvideo() {
 
-		String path = "rtsp://192.168.1.100:8086";
-		//String rtspurl = "rtsp://" + ip_adress + ":8554/h263ESVideoTest";
-		// pathUri = LibVLC.getInstance().nativeToURI(path);
-		//mLocation = LibVLC.PathToURI("/system/media/boot.mp4");
-		// Log.e(TAG, "start rtsp");
-		//mLocation = "http://114.80.180.239/youku/6771DAC08B53281099BA894239/030020010054B0793FE4030230E416171602C3-8C02-4499-4F1E-0D24477E4E05.mp4";
-		//mLibVLC.setMediaList();
-		//rtspmedia = new Media(mLibVLC, path);
-		//mLibVLC.getMediaList().add(rtspmedia);
-		//savedIndexPosition = mLibVLC.getMediaList().size() - 1;
-		//mLibVLC.playIndex(savedIndexPosition);
+		String path = "rtsp://"+ip_adress+":8086";
 		mLibVLC.playMRL(path);
+		Log.d(TAG,"start preview");
 		return null;
 
 	}
 
-	private final VideoEventHandler mEventHandler = new VideoEventHandler(this);
-	private final Handler mHandler = new VideoPlayerHandler(this);
+
 
 	private static class VideoPlayerHandler extends WeakHandler<MainActivity> {
 		public VideoPlayerHandler(MainActivity owner) {
@@ -461,6 +452,25 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		lp.height = dh;
 		surfaceView.setLayoutParams(lp);
 		surfaceView.invalidate();
+	}
+	
+	
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
+
+		EventHandler em = EventHandler.getInstance();
+		em.removeHandler(mHandler);
+		mLibVLC.eventVideoPlayerActivityCreated(false);
+		mLibVLC.stop();
+		mLibVLC.clearBuffer();
+		mLibVLC.destroy();
+		mLibVLC.closeAout();
+		mLibVLC.detachSurface();
+		mLibVLC.stopDebugBuffer();
+		android.os.Process.killProcess(android.os.Process.myPid());
+
 	}
 
 }
