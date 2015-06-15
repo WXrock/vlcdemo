@@ -1,8 +1,12 @@
 package com.example.vlcdemo;
 
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
+import java.net.UnknownHostException;
+
 import org.videolan.libvlc.EventHandler;
 import org.videolan.libvlc.IVideoPlayer;
 import org.videolan.libvlc.LibVLC;
@@ -39,10 +43,15 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends Activity implements IVideoPlayer {
 
-	String TAG = "MAIN";
+	private static final String TAG = "MAIN";
+	private static final String CHANGE = "change";
+	private static final String PIC = "pic";
+	private static final String PREVIEW = "PREVIEW";		
+	
 
 	
 	private Button mPreviewBut;
@@ -85,7 +94,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	Media rtspmedia;
 
 	private Socket clientSocket = null;
-	private OutputStream outStream = null;
+	private OutputStream pout = null;
 	int x = 0;
 	int y = 0;
 	int action = -1;
@@ -96,7 +105,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	byte[] msgBuffer = null;
 	String out = null;
 	boolean change = false;
-	boolean connected = false;
+	boolean isconnected = false;
 	DisplayMetrics dm = null;
 
 	private String ip_adress; //id address of 536;
@@ -187,9 +196,13 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
-			ip_adress = mipEditText.getText().toString();
-			//playvideo();
-			inputmanger.hideSoftInputFromWindow(mipEditText.getWindowToken(), 0);
+			if(!isconnected){
+				ip_adress = mipEditText.getText().toString();
+				inputmanger.hideSoftInputFromWindow(mipEditText.getWindowToken(), 0);
+				SendThead mThread = new SendThead();
+				mThread.start();
+			}
+
 		}
 
 	}
@@ -198,7 +211,29 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
-			playvideo();
+			if(isconnected){
+				String out = PREVIEW;
+                try {
+                    msgBuffer = out.getBytes("UTF-8");
+                    pout = clientSocket.getOutputStream();
+                    pout.write(msgBuffer);
+                    pout.write('\n');
+                    Log.e(TAG, "Send msg:" + out);
+
+                } catch (UnsupportedEncodingException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    reconnect();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    reconnect();
+                    e.printStackTrace();
+                }
+				playvideo();
+			}else{
+				Toast.makeText(MainActivity.this, "connect first", Toast.LENGTH_LONG).show();
+			}
+			
 		}
 
 	}
@@ -207,6 +242,25 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
+	         if (isconnected) {
+                 String out = CHANGE;
+                 try {
+                     msgBuffer = out.getBytes("UTF-8");
+                     pout = clientSocket.getOutputStream();
+                     pout.write(msgBuffer);
+                     pout.write('\n');
+                     Log.e(TAG, "Send msg:" + out);
+
+                 } catch (UnsupportedEncodingException e) {
+                     // TODO Auto-generated catch block
+                     e.printStackTrace();
+                     reconnect();
+                 } catch (IOException e) {
+                     // TODO Auto-generated catch block
+                     reconnect();
+                     e.printStackTrace();
+                 }
+             }
 
 		}
 
@@ -216,7 +270,25 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
+	         if (isconnected) {
+                 String out = PIC;
+                 try {
+                     msgBuffer = out.getBytes("UTF-8");
+                     pout = clientSocket.getOutputStream();
+                     pout.write(msgBuffer);
+                     pout.write('\n');
+                     Log.e(TAG, "Send msg:" + out);
 
+                 } catch (UnsupportedEncodingException e) {
+                     // TODO Auto-generated catch block
+                     e.printStackTrace();
+                     reconnect();
+                 } catch (IOException e) {
+                     // TODO Auto-generated catch block
+                     reconnect();
+                     e.printStackTrace();
+                 }
+             }
 		}
 
 	}
@@ -229,6 +301,47 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		}
 
 	}
+	
+	public class SendThead extends Thread{
+
+		@Override
+		public void run() {
+	       try {
+                clientSocket = new Socket(ip_adress, 8888);
+                clientSocket.setSoTimeout(5000);
+                Log.e(TAG, "¥¥Ω®socket");
+                isconnected = true;
+                mipEditText.setClickable(false);
+            } catch (Exception e) {
+            	// TODO Auto-generated catch block
+                isconnected = false;
+               // Message msg = new Message();
+	           // msg.what = LINKERROR;
+                Log.d(TAG,"timeout");
+                e.printStackTrace();
+            }
+		}
+	}
+	
+    public void reconnect() {
+        try {
+
+            clientSocket = new Socket(ip_adress, 8888);
+            clientSocket.setSoTimeout(5000);
+            Log.e("Send", "ÈáçÊñ∞ËøûÊé•ÊàêÂäü");
+            isconnected = true;
+            mipEditText.setClickable(false);
+
+        } catch (UnknownHostException e) {
+            // TODO Auto-generated catch block
+            isconnected = false;
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            isconnected = false;
+            e.printStackTrace();
+        }
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
