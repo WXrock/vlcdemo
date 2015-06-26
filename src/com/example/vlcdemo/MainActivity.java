@@ -50,7 +50,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private static final String TAG = "MAIN";
 	private static final String CHANGE = "change";
 	private static final String PIC = "pic";
-	private static final String PREVIEW = "PREVIEW";		
+	private static final String PREVIEW = "preview";		
+	private static final String BYE = "bye";
 	
 
 	
@@ -223,15 +224,16 @@ public class MainActivity extends Activity implements IVideoPlayer {
                 } catch (UnsupportedEncodingException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
-                    reconnect();
+                    //reconnect();
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
-                    reconnect();
+                    //reconnect();
                     e.printStackTrace();
                 }
 				playvideo();
 			}else{
 				Toast.makeText(MainActivity.this, "connect first", Toast.LENGTH_LONG).show();
+				playvideo();
 			}
 			
 		}
@@ -254,10 +256,10 @@ public class MainActivity extends Activity implements IVideoPlayer {
                  } catch (UnsupportedEncodingException e) {
                      // TODO Auto-generated catch block
                      e.printStackTrace();
-                     reconnect();
+                     //reconnect();
                  } catch (IOException e) {
                      // TODO Auto-generated catch block
-                     reconnect();
+                     //reconnect();
                      e.printStackTrace();
                  }
              }
@@ -282,10 +284,10 @@ public class MainActivity extends Activity implements IVideoPlayer {
                  } catch (UnsupportedEncodingException e) {
                      // TODO Auto-generated catch block
                      e.printStackTrace();
-                     reconnect();
+                    // reconnect();
                  } catch (IOException e) {
                      // TODO Auto-generated catch block
-                     reconnect();
+                    // reconnect();
                      e.printStackTrace();
                  }
              }
@@ -571,7 +573,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
-		super.onDestroy();
 
 		EventHandler em = EventHandler.getInstance();
 		em.removeHandler(mHandler);
@@ -582,7 +583,29 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		mLibVLC.closeAout();
 		mLibVLC.detachSurface();
 		mLibVLC.stopDebugBuffer();
+				
+		if (isconnected) {
+            String out = BYE;
+            try {
+                msgBuffer = out.getBytes("UTF-8");
+                pout = clientSocket.getOutputStream();
+                pout.write(msgBuffer);
+                pout.write('\n');
+                Log.e(TAG, "Send msg:" + out);
+
+            } catch (UnsupportedEncodingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                //reconnect();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                //reconnect();
+                e.printStackTrace();
+            }
+        }
+		
 		android.os.Process.killProcess(android.os.Process.myPid());
+		super.onDestroy();
 
 	}
 
