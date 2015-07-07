@@ -51,11 +51,32 @@
         
     </LinearLayout>
     
-    <Button 
-        android:id="@+id/viewPic"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="View result" />  
+        android:orientation="horizontal">
+        
+        <Button
+            android:id="@+id/mode"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+        	android:text="mode"/>
+        
+        <Button
+            android:id="@+id/download"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+        	android:text="download picture"/>
+        
+        <Button 
+        	android:id="@+id/viewPic"
+       		android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:text="View result" />
+        
+    </LinearLayout>
+    
+  
 
 	<SurfaceView
 	    android:id="@+id/surfaceView1"

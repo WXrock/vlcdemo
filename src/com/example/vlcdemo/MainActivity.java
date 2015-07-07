@@ -1,11 +1,13 @@
 package com.example.vlcdemo;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 
 import org.videolan.libvlc.EventHandler;
 import org.videolan.libvlc.IVideoPlayer;
@@ -25,6 +27,7 @@ import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
@@ -52,13 +55,16 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private static final String PIC = "pic";
 	private static final String PREVIEW = "preview";		
 	private static final String BYE = "bye";
-	
+	private static final String SEND = "send";
+	private static final String MODE = "mode";
 
 	
 	private Button mPreviewBut;
 	private Button mChangeBut;
 	private Button mTakeBut;
 	private Button mViewBut;
+	private Button mModeBut;
+	private Button mSendBut;
 	private EditText mipEditText;
 	private Button mConnectBut;
 	private SurfaceView surfaceView;
@@ -96,6 +102,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 	private Socket clientSocket = null;
 	private OutputStream pout = null;
+	private String path = null;
+	
 	int x = 0;
 	int y = 0;
 	int action = -1;
@@ -128,7 +136,9 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		mChangeBut = (Button) findViewById(R.id.changeCam);
 		mTakeBut = (Button) findViewById(R.id.takePic);
 		mViewBut = (Button) findViewById(R.id.viewPic);
-
+		mModeBut = (Button) findViewById(R.id.mode);
+		mSendBut = (Button) findViewById(R.id.download);
+		
 		surfaceView = (SurfaceView) findViewById(R.id.surfaceView1);
 		surfaceHolder = surfaceView.getHolder();
 		surfaceHolder.addCallback(mSurfaceCallback);
@@ -169,11 +179,22 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		eventandler = EventHandler.getInstance();
 		eventandler.addHandler(mEventHandler);
 
+		if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+			path = Environment.getExternalStorageDirectory().toString()+"/rec/";
+			Log.d(TAG,path);
+		}
+		File file = new File(path);
+		if(!file.exists()){
+			file.mkdir();
+		}
+		
 		mConnectBut.setOnClickListener(new ConnectButonclick());
-		mPreviewBut.setOnClickListener(new previewButonclick());
-		mChangeBut.setOnClickListener(new changeCamButonclick());
-		mTakeBut.setOnClickListener(new takePicButonclick());
+		mPreviewBut.setOnClickListener(new PreviewButonclick());
+		mChangeBut.setOnClickListener(new ChangeCamButonclick());
+		mTakeBut.setOnClickListener(new TakePicButonclick());
 		mViewBut.setOnClickListener(new ViewButonclick());
+		mModeBut.setOnClickListener(new ModeButonclick() );
+		mSendBut.setOnClickListener(new SendButtononclick());
 		mipEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
 
 			@Override
@@ -208,89 +229,57 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 	}
 	
-	class previewButonclick implements Button.OnClickListener {
+	class PreviewButonclick implements Button.OnClickListener {
 
 		@Override
 		public void onClick(View v) {
 			if(isconnected){
-				String out = PREVIEW;
-                try {
-                    msgBuffer = out.getBytes("UTF-8");
-                    pout = clientSocket.getOutputStream();
-                    pout.write(msgBuffer);
-                    pout.write('\n');
-                    Log.e(TAG, "Send msg:" + out);
-
-                } catch (UnsupportedEncodingException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    //reconnect();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    //reconnect();
-                    e.printStackTrace();
-                }
-				playvideo();
+				sendSocket(PREVIEW);
+				//playvideo();
 			}else{
 				Toast.makeText(MainActivity.this, "connect first", Toast.LENGTH_LONG).show();
-				playvideo();
 			}
 			
 		}
 
 	}
 	
-	class changeCamButonclick implements Button.OnClickListener {
+	class ChangeCamButonclick implements Button.OnClickListener {
 
 		@Override
 		public void onClick(View v) {
-	         if (isconnected) {
-                 String out = CHANGE;
-                 try {
-                     msgBuffer = out.getBytes("UTF-8");
-                     pout = clientSocket.getOutputStream();
-                     pout.write(msgBuffer);
-                     pout.write('\n');
-                     Log.e(TAG, "Send msg:" + out);
-
-                 } catch (UnsupportedEncodingException e) {
-                     // TODO Auto-generated catch block
-                     e.printStackTrace();
-                     //reconnect();
-                 } catch (IOException e) {
-                     // TODO Auto-generated catch block
-                     //reconnect();
-                     e.printStackTrace();
-                 }
-             }
-
+			sendSocket(CHANGE);
 		}
 
 	}
 	
-	class takePicButonclick implements Button.OnClickListener {
+	class TakePicButonclick implements Button.OnClickListener {
 
 		@Override
 		public void onClick(View v) {
-	         if (isconnected) {
-                 String out = PIC;
-                 try {
-                     msgBuffer = out.getBytes("UTF-8");
-                     pout = clientSocket.getOutputStream();
-                     pout.write(msgBuffer);
-                     pout.write('\n');
-                     Log.e(TAG, "Send msg:" + out);
+			sendSocket(PIC);
+		}
 
-                 } catch (UnsupportedEncodingException e) {
-                     // TODO Auto-generated catch block
-                     e.printStackTrace();
-                    // reconnect();
-                 } catch (IOException e) {
-                     // TODO Auto-generated catch block
-                    // reconnect();
-                     e.printStackTrace();
-                 }
-             }
+	}
+	
+	class SendButtononclick implements Button.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			sendSocket(SEND);
+			SimpleDateFormat mdate = new SimpleDateFormat("yyyyMMddhhmmss");
+			String curPath = path + mdate.format(new java.util.Date()) + "_";
+			RecFileThread recThread = new RecFileThread(ip_adress, 9999, curPath);
+			recThread.start();			
+		}
+		
+	}
+	
+	class ModeButonclick implements Button.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			sendSocket(MODE);
 		}
 
 	}
@@ -313,6 +302,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
                 clientSocket.setSoTimeout(5000);
                 Log.e(TAG, "´´½¨socket");
                 isconnected = true;
+                pout = clientSocket.getOutputStream();
                 mipEditText.setClickable(false);
             } catch (Exception e) {
             	// TODO Auto-generated catch block
@@ -364,17 +354,36 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		return super.onOptionsItemSelected(item);
 	}
 
-	public Void playvideo() {
+	public void playvideo() {
 
 		String path = "rtsp://"+ip_adress+":8086";
 		mLibVLC.playMRL(path);
 		Log.d(TAG,"start preview");
-		return null;
 
 	}
 
 
+	private void sendSocket(String command){
+        if (isconnected) {
+            try {
+                msgBuffer = command.getBytes("UTF-8");
+                pout.write(msgBuffer);
+                pout.write('\n');
+                Log.e(TAG, "Send msg:" + command);
 
+            } catch (UnsupportedEncodingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                //reconnect();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                //reconnect();
+                e.printStackTrace();
+            }
+        }
+	}
+	
+	
 	private static class VideoPlayerHandler extends WeakHandler<MainActivity> {
 		public VideoPlayerHandler(MainActivity owner) {
 			super(owner);
