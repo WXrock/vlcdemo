@@ -1,11 +1,16 @@
 package com.example.vlcdemo;
 
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 
@@ -40,6 +45,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -57,7 +63,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private static final String BYE = "bye";
 	private static final String SEND = "send";
 	private static final String MODE = "mode";
-
+	private static final String PIC_DONE = "pic_done";
+	private static final String PIC_FAIL = "pic_fail";
 	
 	private Button mPreviewBut;
 	private Button mChangeBut;
@@ -94,13 +101,21 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private static final int FADE_OUT = 1;
 	private static final int SHOW_PROGRESS = 2;
 	private static final int SURFACE_SIZE = 3;
+	private static final int FADE_OUT_INFO = 4;
 	private static final int AUDIO_SERVICE_CONNECTION_SUCCESS = 5;
 	private static final int AUDIO_SERVICE_CONNECTION_FAILED = 6;
-	private static final int FADE_OUT_INFO = 4;
+	
+	public static final int LINKERROR = 7;
+	public static final int LINKSUCCESS = 8;
+	public static final int PICSUCCESS = 9;
+	public static final int PICERROR = 10;
+	
+	
 	private EventHandler eventandler;
 	Media rtspmedia;
 
 	private Socket clientSocket = null;
+	private SendThread mSendThread = null;
 	private OutputStream pout = null;
 	private String path = null;
 	
@@ -121,7 +136,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	InputMethodManager inputmanger;
 	
 	private final VideoEventHandler mEventHandler = new VideoEventHandler(this);
-	private final Handler mHandler = new VideoPlayerHandler(this);
+	private final Handler mVideoHandler = new VideoPlayerHandler(this);
+	private final Handler mSocketHandler = new SocketHandler(this);
 
 
 	@Override
@@ -174,7 +190,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		}
 
 		mLibVLC.eventVideoPlayerActivityCreated(true);
-		mLibVLC.setHardwareAcceleration(LibVLC.HW_ACCELERATION_AUTOMATIC);
+		mLibVLC.setHardwareAcceleration(LibVLC.HW_ACCELERATION_DISABLED); //importante don't change!!!!!
 
 		eventandler = EventHandler.getInstance();
 		eventandler.addHandler(mEventHandler);
@@ -221,8 +237,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 			if(!isconnected){
 				ip_adress = mipEditText.getText().toString();
 				inputmanger.hideSoftInputFromWindow(mipEditText.getWindowToken(), 0);
-				SendThead mThread = new SendThead();
-				mThread.start();
+				mSendThread = new SendThread();
+				mSendThread.start();
 			}
 
 		}
@@ -234,8 +250,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onClick(View v) {
 			if(isconnected){
-				sendSocket(PREVIEW);
-				//playvideo();
+				////sendSocket(PREVIEW);
+				playvideo();
 			}else{
 				Toast.makeText(MainActivity.this, "connect first", Toast.LENGTH_LONG).show();
 			}
@@ -257,6 +273,22 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
+			if(mLibVLC.isPlaying()){
+				mLibVLC.stop();
+			}
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			sendSocket(MODE);
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			sendSocket(PIC);
 		}
 
@@ -269,7 +301,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 			sendSocket(SEND);
 			SimpleDateFormat mdate = new SimpleDateFormat("yyyyMMddhhmmss");
 			String curPath = path + mdate.format(new java.util.Date()) + "_";
-			RecFileThread recThread = new RecFileThread(ip_adress, 9999, curPath);
+			RecFileThread recThread = new RecFileThread(ip_adress, 9999, curPath,mSocketHandler);
 			recThread.start();			
 		}
 		
@@ -279,7 +311,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
-			sendSocket(MODE);
+
+
 		}
 
 	}
@@ -293,26 +326,56 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 	}
 	
-	public class SendThead extends Thread{
+	public class SendThread extends Thread{
+		private boolean exit = false;
+		private BufferedReader in;
 
 		@Override
 		public void run() {
 	       try {
-                clientSocket = new Socket(ip_adress, 8888);
-                clientSocket.setSoTimeout(5000);
+                //clientSocket = new Socket(ip_adress, 8888);
+                clientSocket = new Socket();
+                InetSocketAddress remoteAddr = new InetSocketAddress(ip_adress, 8888);
+                clientSocket.connect(remoteAddr, 5000);
+                //clientSocket.setSoTimeout(5000);//该方法设置的是读写的超时
                 Log.e(TAG, "创建socket");
                 isconnected = true;
                 pout = clientSocket.getOutputStream();
+                in  = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 mipEditText.setClickable(false);
+                Message msg = new Message();
+                msg.arg1 = LINKSUCCESS;
+                mSocketHandler.sendMessage(msg);
+                while(!exit){
+                	String str = in.readLine();
+                	if(str.equals(PIC_DONE)){
+                		Log.e(TAG,"TEST");
+                		Message msg1 = new Message();
+        	            msg1.arg1 = PICSUCCESS;
+                        mSocketHandler.sendMessage(msg1);
+                	}else if(str.equals(PIC_FAIL)){
+                		Message msg2 = new Message();
+        	            msg2.arg1 = PICERROR;
+                        mSocketHandler.sendMessage(msg2);
+                		Log.e(TAG,"TEST1");
+                	}else{
+                		Log.e(TAG,"TEST2");
+                	}
+                }
             } catch (Exception e) {
             	// TODO Auto-generated catch block
                 isconnected = false;
-               // Message msg = new Message();
-	           // msg.what = LINKERROR;
+                Message msg = new Message();
+	            msg.arg1 = LINKERROR;
                 Log.d(TAG,"timeout");
+                mSocketHandler.sendMessage(msg);
                 e.printStackTrace();
             }
 		}
+		
+		public void exit(){
+			this.exit = true;
+		};
 	}
 	
     public void reconnect() {
@@ -320,7 +383,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
             clientSocket = new Socket(ip_adress, 8888);
             clientSocket.setSoTimeout(5000);
-            Log.e("Send", "閲嶆柊杩炴帴鎴愬姛");
+            Log.e(TAG, "重新连接");
             isconnected = true;
             mipEditText.setClickable(false);
 
@@ -414,8 +477,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		mVideoWidth = width;
 		mSarNum = sar_num;
 		mSarDen = sar_den;
-		Message msg = mHandler.obtainMessage(SURFACE_SIZE);
-		mHandler.sendMessage(msg);
+		Message msg = mVideoHandler.obtainMessage(SURFACE_SIZE);
+		mVideoHandler.sendMessage(msg);
 
 	}
 
@@ -584,7 +647,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		// TODO Auto-generated method stub
 
 		EventHandler em = EventHandler.getInstance();
-		em.removeHandler(mHandler);
+		em.removeHandler(mVideoHandler);
 		mLibVLC.eventVideoPlayerActivityCreated(false);
 		mLibVLC.stop();
 		mLibVLC.clearBuffer();

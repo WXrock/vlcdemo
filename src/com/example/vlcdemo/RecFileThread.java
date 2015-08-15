@@ -8,22 +8,27 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 public class RecFileThread extends Thread implements Runnable{
 	public static final String TAG = "RecFileThread";
+	public static final int REC_DONE = 0;
 	private int port;
 	private String ipaddress;
 	private Socket client;
 	private DataInputStream dis = null;
 	private FileOutputStream fos = null;
 	private DataOutputStream dos = null;
+	private Handler handler;
 	byte[] buffer = null;
 	File[] files;
 	int totalByte;
 	int read;
 	
-	public RecFileThread(String ipaddress,int port,String path){
+	public RecFileThread(String ipaddress,int port,String path,Handler handler){
+		this.handler = handler;
 		this.port = port;
 		this.ipaddress = ipaddress;
 		this.buffer = new byte[2048];
@@ -68,6 +73,9 @@ public class RecFileThread extends Thread implements Runnable{
 			dis.close();
 			fos.close();
 			client.close();
+			Message msg = new Message();
+			msg.arg1 = REC_DONE;
+			handler.sendMessage(msg);
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
