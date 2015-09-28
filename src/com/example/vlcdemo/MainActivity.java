@@ -25,6 +25,7 @@ import org.videolan.vlc.util.WeakHandler;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -139,6 +140,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private final Handler mVideoHandler = new VideoPlayerHandler(this);
 	private final Handler mSocketHandler = new SocketHandler(this);
 
+	
+	private String curPath = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -300,7 +303,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		public void onClick(View v) {
 			sendSocket(SEND);
 			SimpleDateFormat mdate = new SimpleDateFormat("yyyyMMddhhmmss");
-			String curPath = path + mdate.format(new java.util.Date()) + "_";
+			curPath = path + mdate.format(new java.util.Date()) + "_";
 			RecFileThread recThread = new RecFileThread(ip_adress, 9999, curPath,mSocketHandler);
 			recThread.start();			
 		}
@@ -321,6 +324,18 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 		@Override
 		public void onClick(View v) {
+			Intent i = new Intent(MainActivity.this, ViewActivity.class);
+			if(curPath != null) {
+				//String test = Environment.getExternalStorageDirectory().toString()+"/rec/"+"20150928050747_";
+				String paths[] = new String[8];
+				for(int j=0;j<8;j++) {
+					 paths[j] = curPath+j+".jpg";
+					 //Log.e(TAG,paths[j]);
+				}
+				i.putExtra("fileName",paths);
+				startActivity(i);
+			}
+
 
 		}
 
@@ -381,8 +396,9 @@ public class MainActivity extends Activity implements IVideoPlayer {
     public void reconnect() {
         try {
 
-            clientSocket = new Socket(ip_adress, 8888);
-            clientSocket.setSoTimeout(5000);
+            clientSocket = new Socket();
+            InetSocketAddress remoteAddr = new InetSocketAddress(ip_adress, 8888);
+            clientSocket.connect(remoteAddr, 5000);
             Log.e(TAG, "重新连接");
             isconnected = true;
             mipEditText.setClickable(false);
