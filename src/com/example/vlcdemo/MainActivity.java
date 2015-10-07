@@ -14,6 +14,7 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 
+import org.opencv.android.OpenCVLoader;
 import org.videolan.libvlc.EventHandler;
 import org.videolan.libvlc.IVideoPlayer;
 import org.videolan.libvlc.LibVLC;
@@ -48,6 +49,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -146,6 +148,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setContentView(R.layout.activity_main);
 
 		inputmanger = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -325,16 +328,11 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onClick(View v) {
 			Intent i = new Intent(MainActivity.this, ViewActivity.class);
-			if(curPath != null) {
-				//String test = Environment.getExternalStorageDirectory().toString()+"/rec/"+"20150928050747_";
-				String paths[] = new String[8];
-				for(int j=0;j<8;j++) {
-					 paths[j] = curPath+j+".jpg";
-					 //Log.e(TAG,paths[j]);
-				}
-				i.putExtra("fileName",paths);
+			//if(curPath != null) {
+				String test = Environment.getExternalStorageDirectory().toString()+"/rec/"+"20150930120211_";
+				i.putExtra("fileName",test);
 				startActivity(i);
-			}
+			//}
 
 
 		}
@@ -696,5 +694,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		super.onDestroy();
 
 	}
+	
 
 }
