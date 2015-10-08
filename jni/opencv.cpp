@@ -28,7 +28,7 @@ using namespace cv::detail;
 
 //定义参数
 vector<string> img_names;
-std::string result_name;
+//std::string result_name;
 bool try_gpu = false;  // 是否使用GPU(图形处理器)，默认为no
 
 /* 运动估计参数 */
@@ -37,7 +37,7 @@ double work_megapix = 0.6;//<--work_megapix <float>> 图像匹配的分辨率大
 float conf_thresh = 1.f;//conf_thresh <float>两幅图来自同一全景图的置信度
 WaveCorrectKind wave_correct = detail::WAVE_CORRECT_HORIZ;//wave_correct (no|horiz|vert) 波形校验(水平，垂直或者没有),
 							//默认是horiz
-float match_conf = 0.3f;//match_conf <float> 特征点检测置信等级，最近邻匹配距离与次近邻匹配距离的比值，
+float match_conf;//match_conf <float> 特征点检测置信等级，最近邻匹配距离与次近邻匹配距离的比值，
 						//surf默认为0.65，orb默认为0.3
 /*图像融合参数*/
 double seam_megapix = 0.1;//seam_megapix <double> 拼接缝像素的大小，默认为0.1 
@@ -95,36 +95,43 @@ std::string jstring2str(JNIEnv* env, jstring jstr)
     }     
     env->ReleaseByteArrayElements(barr,ba,0);     
     std::string stemp(rtn);  
-    free(rtn);  
+    free(rtn); 
     return   stemp;     
 }   
 
 
 JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
-		(JNIEnv *env, jclass obj,jstring path,jint width,jint height)
+		(JNIEnv *env, jclass obj,jstring path,jfloat var,jint width,jint height)
 {
     clock_t start,finish;
     start=clock();
 
-    int mwidth = (int)(width * 0.6);
-    int mheight = (int)(height * 0.6);
-
+    int mwidth = (int)(width * 0.625);
+    int mheight = (int)(height * 0.625);
+    match_conf = (float)var;
 
     int i;
     char resultBuf[100];
-    char num_tmp; 
-    std::string charPath = jstring2str(env,path);
-
+    char num_tmp;
+    string pathBuf[8];
+    const char *charPath = jstringTostring(env,path);
 
     for(i= 0;i<8;i++) {
         sprintf(&num_tmp,"%d",i);
+        LOGE("%c\n",num_tmp);
         //strcat
-        charPath = charPath +num_tmp;
-        img_names.push_back(charPath);
+        pathBuf[i] += charPath;
+        pathBuf[i] += num_tmp;
+        pathBuf[i] += ".jpg";
+        LOGE("%s\n",pathBuf[i].c_str());
+        img_names.push_back(pathBuf[i]);
     }
-    result_name = charPath+"result.jpg"; 
+    string result_name(charPath);
+    result_name += "result.jpg"; 
+    LOGE("%s\n",result_name.c_str());
 
 
+    LOGE("TEST!\n");
     int num_images = static_cast<int>(img_names.size());
     double work_scale = 1, seam_scale = 1, compose_scale = 1;
     //特征点检测以及对图像进行预处理（尺寸缩放），然后计算每幅图形的特征点，以及特征点描述子
@@ -436,11 +443,11 @@ JNIEXPORT jdouble JNICALL Java_com_example_vlcdemo_ImageProc_getTime
     return (jdouble)totaltime;
 }
 
-JNIEXPORT jstring JNICALL Java_com_example_vlcdemo_ImageProc_getResultName
-		(JNIEnv *env, jclass obj)
-{
-	LOGI("%s\n",result_name.c_str());
-	return stoJstring(env,result_name.c_str());
-	
-}
+//JNIEXPORT jstring JNICALL Java_com_example_vlcdemo_ImageProc_getResultName
+//		(JNIEnv *env, jclass obj)
+//{
+//	LOGI("%s\n",result_name.c_str());
+//	return stoJstring(env,result_name.c_str());
+//	
+//}
 

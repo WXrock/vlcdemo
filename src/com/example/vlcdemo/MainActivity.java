@@ -21,6 +21,7 @@ import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.LibVlcException;
 import org.videolan.libvlc.LibVlcUtil;
 import org.videolan.libvlc.Media;
+import org.videolan.vlc.VLCApplication;
 import org.videolan.vlc.util.VLCInstance;
 import org.videolan.vlc.util.WeakHandler;
 
@@ -68,6 +69,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private static final String MODE = "mode";
 	private static final String PIC_DONE = "pic_done";
 	private static final String PIC_FAIL = "pic_fail";
+	private static final String FLIP = "flip";
 	
 	private Button mPreviewBut;
 	private Button mChangeBut;
@@ -84,7 +86,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private int savedIndexPosition = -1;
 	private AudioManager mAudioManager;
 	private int mAudioMax;
-	private SharedPreferences mSettings;
+	private SharedPreferences pref;
 	private static final int SURFACE_BEST_FIT = 0;
 	private static final int SURFACE_FIT_HORIZONTAL = 1;
 	private static final int SURFACE_FIT_VERTICAL = 2;
@@ -142,9 +144,9 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private final Handler mVideoHandler = new VideoPlayerHandler(this);
 	private final Handler mSocketHandler = new SocketHandler(this);
 
-	
 	private String curPath = null;
-
+	private boolean isFlip = false; 
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -167,8 +169,11 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		surfaceView.setKeepScreenOn(true);
 		
-		SharedPreferences pref = PreferenceManager
+		this.pref = PreferenceManager
 				.getDefaultSharedPreferences(this);
+		this.isFlip = pref.getBoolean(VLCApplication.FLIP, false);
+		
+		
 		int pitch;
 		String chroma = pref.getString("chroma_format", "");
 		if (LibVlcUtil.isGingerbreadOrLater() && chroma.equals("YV12")) {
@@ -256,7 +261,16 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onClick(View v) {
 			if(isconnected){
-				////sendSocket(PREVIEW);
+				if(isFlip){
+					sendSocket(FLIP);
+					Log.d(TAG,"FLIP");
+				}
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				playvideo();
 			}else{
 				Toast.makeText(MainActivity.this, "connect first", Toast.LENGTH_LONG).show();
@@ -426,6 +440,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		// as you specify a parent activity in AndroidManifest.xml.
 		int id = item.getItemId();
 		if (id == R.id.action_settings) {
+			Intent it =  new Intent(MainActivity.this,OptionActivity.class);
+			startActivity(it);
 			return true;
 		}
 		return super.onOptionsItemSelected(item);

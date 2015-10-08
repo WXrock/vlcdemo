@@ -1,18 +1,21 @@
 package com.example.vlcdemo;
 
 import org.opencv.android.OpenCVLoader;
+import org.videolan.vlc.VLCApplication;
 import org.videolan.vlc.util.WeakHandler;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -38,10 +41,14 @@ public class ViewActivity extends Activity {
 	private TextView image_info;
 	private Button mbut = null;
 	private Handler mHandler = null;
+	private float mVar;
 	
 	private static final String TAG = "ViewActivity";
 	private static int WIDTH = 2048;
 	private static int HEIGHT = 1536;
+	
+	private Bitmap bm_small;
+	private Bitmap bm_big;
 	
 	
 	@Override
@@ -49,6 +56,10 @@ public class ViewActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setContentView(R.layout.view_layout);
+		
+		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+		mVar = pref.getFloat(VLCApplication.MATCH_CONF, 0.3f);
+		Log.d(TAG,String.valueOf(mVar));
 		
 		this.path = getIntent().getStringExtra("fileName");
 		if(path != null) {
@@ -62,6 +73,7 @@ public class ViewActivity extends Activity {
 		
 		this.image_info = (TextView) findViewById(R.id.text_image);
 		this.mbut = (Button) findViewById(R.id.proc);
+		
 		this.mHandler = new Handler(){
 
 			@Override
@@ -89,8 +101,8 @@ public class ViewActivity extends Activity {
 			public void onItemClick(AdapterView<?> arg0, View arg1, int pos,
 					long arg3) {
 				ImageView image = (ImageView) findViewById(R.id.imageView);
-				Bitmap bm = getBitmap(paths[pos], 4);
-				image.setImageBitmap(bm);
+				bm_big = getBitmap(paths[pos], 4);
+				image.setImageBitmap(bm_big);
 				image.setAdjustViewBounds(true);
 				image.setMaxHeight(640);
 				//image.setMaxWidth(480);
@@ -112,7 +124,7 @@ public class ViewActivity extends Activity {
 					@Override
 					public void run() {
 						
-						ret = ImageProc.proc(path, WIDTH, HEIGHT);
+						ret = ImageProc.proc(path,mVar, WIDTH, HEIGHT);
 						dialog.dismiss();
 						
 						Message msg = new Message();
@@ -139,6 +151,7 @@ public class ViewActivity extends Activity {
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		super.onDestroy();
+
 	}
 	
 	
@@ -175,11 +188,11 @@ public class ViewActivity extends Activity {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			ImageView imageView;
-			Bitmap bm;
+			
 			if(convertView==null) {
 				imageView = new ImageView(context);
-				bm = getBitmap(paths[position], 16);
-				imageView.setImageBitmap(bm);
+				bm_small = getBitmap(paths[position], 16);
+				imageView.setImageBitmap(bm_small);
 				imageView.setScaleType(ImageView.ScaleType.FIT_XY);
 				imageView.setLayoutParams(new Gallery.LayoutParams(128, 96));
 			}else {
@@ -216,5 +229,6 @@ public class ViewActivity extends Activity {
 			Log.d(TAG,"load failed");
 		}
 	}
+	
 	
 }

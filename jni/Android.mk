@@ -4,6 +4,7 @@ include $(CLEAR_VARS)
 
 OPENCV_CAMERA_MODULES := off
 OPENCV_INSTALL_MODULES := on
+OPENCV_LIB_TYPE:=SHARED
 
 include E:\Android\openSource\OpenCV-2.4.10-android-sdk\sdk\native\jni\OpenCV.mk   
 LOCAL_MODULE    := opencv

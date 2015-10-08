@@ -13,7 +13,7 @@ extern "C" {
  * Signature: ([III)[I
  */
 JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
-  (JNIEnv *env, jclass obj,jstring path,jint width,jint height);
+  (JNIEnv *env, jclass obj,jstring path,jfloat,jint width,jint height);
 JNIEXPORT jdouble JNICALL Java_com_example_vlcdemo_ImageProc_getTime
 		(JNIEnv *env, jclass obj);
   
@@ -23,3 +23,4 @@ JNIEXPORT jstring JNICALL Java_com_example_vlcdemo_ImageProc_getResultName
 }
 #endif
 #endif
+
