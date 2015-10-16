@@ -4,13 +4,11 @@ package com.example.vlcdemo;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 
@@ -29,11 +27,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -48,7 +46,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
@@ -75,7 +72,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private Button mChangeBut;
 	private Button mTakeBut;
 	private Button mViewBut;
-	private Button mModeBut;
 	private Button mSendBut;
 	private EditText mipEditText;
 	private Button mConnectBut;
@@ -83,10 +79,9 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private SurfaceHolder surfaceHolder;
 	
 	private LibVLC mLibVLC;
-	private int savedIndexPosition = -1;
-	private AudioManager mAudioManager;
-	private int mAudioMax;
+
 	private SharedPreferences pref;
+	private Editor edit = null;	
 	private static final int SURFACE_BEST_FIT = 0;
 	private static final int SURFACE_FIT_HORIZONTAL = 1;
 	private static final int SURFACE_FIT_VERTICAL = 2;
@@ -101,19 +96,16 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private int mSarNum;
 	private int mSarDen;
 	private int mSurfaceAlign;
-	private static final int OVERLAY_TIMEOUT = 4000;
-	private static final int OVERLAY_INFINITE = 3600000;
-	private static final int FADE_OUT = 1;
-	private static final int SHOW_PROGRESS = 2;
+
 	private static final int SURFACE_SIZE = 3;
-	private static final int FADE_OUT_INFO = 4;
-	private static final int AUDIO_SERVICE_CONNECTION_SUCCESS = 5;
-	private static final int AUDIO_SERVICE_CONNECTION_FAILED = 6;
+
 	
 	public static final int LINKERROR = 7;
 	public static final int LINKSUCCESS = 8;
 	public static final int PICSUCCESS = 9;
 	public static final int PICERROR = 10;
+	public static final int PICSTART = 11;
+	public static final int DOWNSTART =12;
 	
 	
 	private EventHandler eventandler;
@@ -147,6 +139,7 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private String curPath = null;
 	private boolean isFlip = false; 
 	
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -160,7 +153,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		mChangeBut = (Button) findViewById(R.id.changeCam);
 		mTakeBut = (Button) findViewById(R.id.takePic);
 		mViewBut = (Button) findViewById(R.id.viewPic);
-		mModeBut = (Button) findViewById(R.id.mode);
 		mSendBut = (Button) findViewById(R.id.download);
 		
 		surfaceView = (SurfaceView) findViewById(R.id.surfaceView1);
@@ -171,7 +163,9 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		
 		this.pref = PreferenceManager
 				.getDefaultSharedPreferences(this);
+		this.edit = pref.edit();
 		this.isFlip = pref.getBoolean(VLCApplication.FLIP, false);
+		this.curPath = pref.getString("lastPath", null);
 		
 		
 		int pitch;
@@ -220,7 +214,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		mChangeBut.setOnClickListener(new ChangeCamButonclick());
 		mTakeBut.setOnClickListener(new TakePicButonclick());
 		mViewBut.setOnClickListener(new ViewButonclick());
-		mModeBut.setOnClickListener(new ModeButonclick() );
 		mSendBut.setOnClickListener(new SendButtononclick());
 		mipEditText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
 
@@ -296,6 +289,11 @@ public class MainActivity extends Activity implements IVideoPlayer {
 			if(mLibVLC.isPlaying()){
 				mLibVLC.stop();
 			}
+
+			Message msg = new Message();
+			msg.arg1 = PICSTART;
+			mSocketHandler.sendMessage(msg);
+			
 			try {
 				Thread.sleep(3000);
 			} catch (InterruptedException e) {
@@ -319,22 +317,19 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onClick(View v) {
 			sendSocket(SEND);
+			
+			Message msg = new Message();
+			msg.arg1 = DOWNSTART;
+			mSocketHandler.sendMessage(msg);
+			
 			SimpleDateFormat mdate = new SimpleDateFormat("yyyyMMddhhmmss");
 			curPath = path + mdate.format(new java.util.Date()) + "_";
+			edit.putString("lastPath", curPath);
+			edit.commit();
 			RecFileThread recThread = new RecFileThread(ip_adress, 9999, curPath,mSocketHandler);
 			recThread.start();			
 		}
 		
-	}
-	
-	class ModeButonclick implements Button.OnClickListener {
-
-		@Override
-		public void onClick(View v) {
-
-
-		}
-
 	}
 	
 	class ViewButonclick implements Button.OnClickListener {
@@ -342,12 +337,12 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onClick(View v) {
 			Intent i = new Intent(MainActivity.this, ViewActivity.class);
-			//if(curPath != null) {
-				String test = Environment.getExternalStorageDirectory().toString()+"/rec/"+"20150930120211_";
-				i.putExtra("fileName",test);
+			if(curPath != null) {
+				i.putExtra("fileName",curPath);
 				startActivity(i);
-			//}
-
+			}else{
+				Toast.makeText(MainActivity.this, "no picture found!", Toast.LENGTH_SHORT).show();
+			}
 
 		}
 
@@ -710,6 +705,5 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		super.onDestroy();
 
 	}
-	
 
 }

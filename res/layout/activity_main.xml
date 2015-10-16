@@ -56,11 +56,6 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         
-        <Button
-            android:id="@+id/mode"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-        	android:text="mode"/>
         
         <Button
             android:id="@+id/download"
