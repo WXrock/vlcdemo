@@ -1,5 +1,8 @@
 package com.example.vlcdemo;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 import org.opencv.android.OpenCVLoader;
 import org.videolan.vlc.VLCApplication;
 import org.videolan.vlc.util.WeakHandler;
@@ -25,6 +28,9 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.Gallery;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -40,12 +46,17 @@ public class ViewActivity extends Activity {
 	private String[] paths = null;
 	private TextView image_info;
 	private Button mbut = null;
+	
 	private Handler mHandler = null;
 	private float mVar;
 	
 	private static final String TAG = "ViewActivity";
 	private static int WIDTH = 2048;
 	private static int HEIGHT = 1536;
+	private CheckBoxes mBoxes = null;
+	private int chosenPic = 0;
+	private int startPos = -1;
+	private int endPos = -1;
 	
 	private Bitmap bm_small;
 	private Bitmap bm_big;
@@ -71,6 +82,13 @@ public class ViewActivity extends Activity {
 			Log.e(TAG,"path is null");
 		}
 		
+		this.mBoxes = new CheckBoxes();
+		this.mBoxes.setBoxes((CheckBox) findViewById(R.id.pic1), (CheckBox) findViewById(R.id.pic2),
+				(CheckBox) findViewById(R.id.pic3), (CheckBox) findViewById(R.id.pic4),
+				(CheckBox) findViewById(R.id.pic5), (CheckBox) findViewById(R.id.pic6),
+				(CheckBox) findViewById(R.id.pic7), (CheckBox) findViewById(R.id.pic8));
+
+		
 		this.image_info = (TextView) findViewById(R.id.text_image);
 		this.mbut = (Button) findViewById(R.id.proc);
 		
@@ -85,6 +103,9 @@ public class ViewActivity extends Activity {
 						break;
 					case 1:
 						Toast.makeText(getBaseContext(), "拼接失败", Toast.LENGTH_LONG).show();
+						break;
+					case 2:
+						Toast.makeText(getBaseContext(), "请选择连续的图片", Toast.LENGTH_LONG).show();
 						break;
 				}
 				
@@ -116,6 +137,12 @@ public class ViewActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				
+				if(mBoxes.isLegal() == false){
+					Message msg = new Message();
+					msg.what = 2;
+					mHandler.sendMessage(msg);
+					return;
+				}
 				final ProgressDialog dialog = ProgressDialog.show(ViewActivity.this, "正在拼接 ", "please wait",true);
 				new Thread(new Runnable(){
 					private double time; 
@@ -124,7 +151,8 @@ public class ViewActivity extends Activity {
 					@Override
 					public void run() {
 						
-						ret = ImageProc.proc(path,mVar, WIDTH, HEIGHT);
+						//Log.e(TAG,mBoxes.getStart()+"TEST"+mBoxes.getCnt());
+						ret = ImageProc.proc(path,mBoxes.getStart(),mBoxes.getCnt(),mVar, WIDTH, HEIGHT);
 						dialog.dismiss();
 						
 						Message msg = new Message();

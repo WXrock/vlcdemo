@@ -66,7 +66,9 @@ public class MainActivity extends Activity implements IVideoPlayer {
 	private static final String MODE = "mode";
 	private static final String PIC_DONE = "pic_done";
 	private static final String PIC_FAIL = "pic_fail";
-	private static final String FLIP = "flip";
+	private static final String FLIP = "flip"; 
+	private static final String  WIFI = "wifi";
+	private static final String  ETHERNET = "ethernet";
 	
 	private Button mPreviewBut;
 	private Button mChangeBut;
@@ -138,6 +140,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 
 	private String curPath = null;
 	private boolean isFlip = false; 
+	private boolean isWifi = false;
+	private boolean isEth = true;
 	
 	
 	@Override
@@ -165,6 +169,8 @@ public class MainActivity extends Activity implements IVideoPlayer {
 				.getDefaultSharedPreferences(this);
 		this.edit = pref.edit();
 		this.isFlip = pref.getBoolean(VLCApplication.FLIP, false);
+		this.isWifi = pref.getBoolean(VLCApplication.WIFI, false);
+		this.isEth =  pref.getBoolean(VLCApplication.ETHERNET, true);
 		this.curPath = pref.getString("lastPath", null);
 		
 		
@@ -254,10 +260,6 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onClick(View v) {
 			if(isconnected){
-				if(isFlip){
-					sendSocket(FLIP);
-					Log.d(TAG,"FLIP");
-				}
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -368,6 +370,10 @@ public class MainActivity extends Activity implements IVideoPlayer {
                 Message msg = new Message();
                 msg.arg1 = LINKSUCCESS;
                 mSocketHandler.sendMessage(msg);
+                
+                //set setting before start preview
+                sendNetSetting();
+                
                 while(!exit){
                 	String str = in.readLine();
                 	if(str.equals(PIC_DONE)){
@@ -666,6 +672,28 @@ public class MainActivity extends Activity implements IVideoPlayer {
 		surfaceView.invalidate();
 	}
 	
+	
+	
+	void sendNetSetting(){
+		//send flip setting
+		if(isFlip){
+		sendSocket(FLIP);
+		Log.d(TAG,"FLIP");
+		}
+
+		//send wifi setting
+		if(isWifi){
+			sendSocket(WIFI);
+			Log.d(TAG,"WIFI SET");
+		}
+
+		//send eth setting
+		if(isEth){
+			sendSocket(ETHERNET);
+			Log.d(TAG,"WIFI SET");
+		}
+	}
+
 	
 	@Override
 	protected void onDestroy() {

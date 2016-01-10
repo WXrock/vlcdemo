@@ -41,7 +41,9 @@ public class VLCApplication extends Application {
     
     public final static String MATCH_CONF = "match_conf"; //特征点检测置信等级，最近邻匹配距离与次近邻匹配距离的比值，surf默认为0.65，orb默认为0.3
     public final static String FLIP = "flip";
-
+    public final static String WIFI = "wifi";
+    public final static String ETHERNET = "ethernet";
+    
     @Override
     public void onCreate() {
         super.onCreate();

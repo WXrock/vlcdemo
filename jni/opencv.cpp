@@ -34,7 +34,7 @@ bool try_gpu = false;  // 是否使用GPU(图形处理器)，默认为no
 /* 运动估计参数 */
 double work_megapix = 0.6;//<--work_megapix <float>> 图像匹配的分辨率大小，
 			//图像的面积尺寸变为work_megapix*100000，默认为0.6
-float conf_thresh = 1.f;//conf_thresh <float>两幅图来自同一全景图的置信度
+float conf_thresh = 0.85f;//conf_thresh <float>两幅图来自同一全景图的置信度
 WaveCorrectKind wave_correct = detail::WAVE_CORRECT_HORIZ;//wave_correct (no|horiz|vert) 波形校验(水平，垂直或者没有),
 							//默认是horiz
 float match_conf;//match_conf <float> 特征点检测置信等级，最近邻匹配距离与次近邻匹配距离的比值，
@@ -101,25 +101,24 @@ std::string jstring2str(JNIEnv* env, jstring jstr)
 
 
 JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
-		(JNIEnv *env, jclass obj,jstring path,jfloat var,jint width,jint height)
+		(JNIEnv *env, jclass obj,jstring path,jint pstart,jint pnum,jfloat var,jint width,jint height)
 {
     clock_t start,finish;
     start=clock();
 
     int mwidth = (int)(width * 0.625);
     int mheight = (int)(height * 0.625);
-    match_conf = (float)var;
+    match_conf = (float)var;//should be 0.4
 
+    //pushback picture names
     int i;
     char resultBuf[100];
     char num_tmp;
     string pathBuf[8];
     const char *charPath = jstringTostring(env,path);
 
-    for(i= 0;i<8;i++) {
+    for(i= pstart;i<pstart+pnum;i++) {
         sprintf(&num_tmp,"%d",i);
-        LOGE("%c\n",num_tmp);
-        //strcat
         pathBuf[i] += charPath;
         pathBuf[i] += num_tmp;
         pathBuf[i] += ".jpg";
@@ -130,9 +129,7 @@ JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
     result_name += "result.jpg"; 
     LOGE("%s\n",result_name.c_str());
 
-
-    LOGE("TEST!\n");
-    int num_images = static_cast<int>(img_names.size());
+    int num_images = (int)pnum;
     double work_scale = 1, seam_scale = 1, compose_scale = 1;
     //特征点检测以及对图像进行预处理（尺寸缩放），然后计算每幅图形的特征点，以及特征点描述子
     LOGI("finding feature\n");

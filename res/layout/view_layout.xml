@@ -15,13 +15,13 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:scaleType="fitXY"
-        android:layout_below="@+id/gallery"/>
+        android:layout_below="@id/gallery"/>
     
 	<TextView 
 	    android:id="@+id/text_image"
 	    android:layout_height="wrap_content"
 	    android:layout_width="fill_parent"
-	    android:layout_below="@+id/imageView"/>
+	    android:layout_below="@id/imageView"/>
 	
 	<Button
 	    android:id="@+id/proc"
@@ -30,4 +30,74 @@
 	    android:text="开始拼接"
 	    android:layout_alignParentBottom="true"
 	    android:layout_marginBottom="40dp"/>
+	
+	<CheckBox
+	    android:id="@+id/pic5"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_above="@id/proc"
+	    android:layout_marginBottom="50dp"
+	    android:text="pic4" />		
+
+	<CheckBox
+	    android:id="@+id/pic6"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_above="@id/proc"
+	    android:layout_toRightOf="@id/pic5"
+	    android:layout_marginBottom="50dp"
+	    android:text="pic5" />
+	
+	<CheckBox
+	    android:id="@+id/pic7"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_above="@id/proc"
+	    android:layout_toRightOf="@id/pic6"
+	    android:layout_marginBottom="50dp"
+	    android:text="pic6" />
+	
+	<CheckBox
+	    android:id="@+id/pic8"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_above="@id/proc"
+	    android:layout_toRightOf="@id/pic7"
+	    android:layout_marginBottom="50dp"
+	    android:text="pic7" />
+	
+		
+	<CheckBox
+	    android:id="@+id/pic1"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_above="@id/pic5"
+	    android:text="pic0" />
+	
+	<CheckBox
+	    android:id="@+id/pic2"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_toRightOf="@id/pic1"
+	    android:layout_above="@id/pic6"
+	    android:text="pic1" />
+	
+	<CheckBox
+	    android:id="@+id/pic3"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_toRightOf="@id/pic2"
+	    android:layout_above="@id/pic7"
+	    android:text="pic2" />
+	
+	<CheckBox
+	    android:id="@+id/pic4"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_toRightOf="@id/pic3"
+	    android:layout_above="@id/pic8"
+	    android:text="pic3" />
+
+
+
 </RelativeLayout>
