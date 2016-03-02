@@ -8,13 +8,15 @@
         android:id="@+id/gallery"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
         android:layout_alignParentTop="true"/>
     
     <ImageView 
         android:id="@+id/imageView"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="320dp"
+        android:layout_height="240dp"
         android:scaleType="fitXY"
+        android:layout_centerVertical="true"
         android:layout_below="@id/gallery"/>
     
 	<TextView 
@@ -24,12 +26,19 @@
 	    android:layout_below="@id/imageView"/>
 	
 	<Button
+	    android:id="@+id/view"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_alignParentBottom="true"
+	    android:layout_alignParentLeft="true"
+	    android:text="查看" />
+	
+	<Button
 	    android:id="@+id/proc"
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
 	    android:text="开始拼接"
-	    android:layout_alignParentBottom="true"
-	    android:layout_marginBottom="40dp"/>
+		android:layout_above="@id/view"/>
 	
 	<CheckBox
 	    android:id="@+id/pic5"

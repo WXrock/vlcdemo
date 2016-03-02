@@ -295,22 +295,32 @@ public class MainActivity extends Activity implements IVideoPlayer {
 			Message msg = new Message();
 			msg.arg1 = PICSTART;
 			mSocketHandler.sendMessage(msg);
+			new Thread(new Runnable(){
+
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(3000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					sendSocket(MODE);
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					sendSocket(PIC);
+				}
+				
+				
+			}).start();
 			
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			sendSocket(MODE);
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			sendSocket(PIC);
-		}
+		};
+			
+
 
 	}
 	

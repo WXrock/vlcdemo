@@ -49,8 +49,8 @@ public class RecFileThread extends Thread implements Runnable{
 			
 			this.dis = new DataInputStream(client.getInputStream());
 			this.dos = new DataOutputStream(client.getOutputStream());
-			totalByte = dis.readInt();
-			Log.d(TAG,String.valueOf(totalByte));
+			//totalByte = dis.readInt();
+			//Log.d(TAG,String.valueOf(totalByte));
 			
 			for(int i=0;i<8;i++){
 				int fileLength = dis.readInt();
@@ -67,7 +67,8 @@ public class RecFileThread extends Thread implements Runnable{
 				Log.d(TAG,"RECEIVE:"+i);
 				fos.flush();
 				fos.close();
-				dos.writeUTF("ok");
+				dos.write("ok".getBytes());
+				dos.write('\n');
 			}
 			
 			dis.close();

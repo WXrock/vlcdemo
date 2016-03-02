@@ -101,7 +101,7 @@ public class CheckBoxes {
 		while(tips[i] == false)
 			i++;
 		start = i;
-		while(tips[i] == true)
+		while(i!=8 && tips[i] == true)
 			i++;
 		end = i;
 		

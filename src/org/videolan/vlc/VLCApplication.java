@@ -39,10 +39,11 @@ public class VLCApplication extends Application {
     public final static String INCOMING_CALL_INTENT = "org.videolan.vlc.IncomingCallIntent";
     public final static String CALL_ENDED_INTENT = "org.videolan.vlc.CallEndedIntent";
     
-    public final static String MATCH_CONF = "match_conf"; //特征点检测置信等级，最近邻匹配距离与次近邻匹配距离的比值，surf默认为0.65，orb默认为0.3
+    public final static String CONF_THRESH = "conf_thresh"; //特征点检测置信等级，最近邻匹配距离与次近邻匹配距离的比值，surf默认为0.65，orb默认为0.3
     public final static String FLIP = "flip";
     public final static String WIFI = "wifi";
     public final static String ETHERNET = "ethernet";
+    public final static String AUTO = "auto";
     
     @Override
     public void onCreate() {

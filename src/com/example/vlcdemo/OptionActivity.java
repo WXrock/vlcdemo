@@ -23,8 +23,12 @@ public class OptionActivity extends Activity {
 	private CheckBox flipbox = null;
 	private CheckBox wifibox = null;
 	private CheckBox ethbox = null;
+	private CheckBox autobox = null;
 	private float var;
 	private SharedPreferences pref =null;
+	
+	private static final float MIN_CONF_THRESH = 0.4f;
+	public static final float CONF_THRESH_DEFAULT = 1.0f;
 	
 	private static final String TAG = "OptionActivity";
 	
@@ -40,14 +44,17 @@ public class OptionActivity extends Activity {
 		this.flipbox = (CheckBox) findViewById(R.id.checkbox_flip);
 		this.wifibox = (CheckBox) findViewById(R.id.checkbox_wifi);
 		this.ethbox = (CheckBox) findViewById(R.id.checkbox_eth);
+		this.autobox = (CheckBox) findViewById(R.id.checkbox_auto);
 		
 		this.bar.setOnSeekBarChangeListener(new SeekBarListener());
 		
+		
 		pref = PreferenceManager.getDefaultSharedPreferences(OptionActivity.this);
-		var = pref.getFloat(VLCApplication.MATCH_CONF, 0.3f); 
+		var = pref.getFloat(VLCApplication.CONF_THRESH, CONF_THRESH_DEFAULT); 
 		var_text.setText(String.valueOf(var));
 		
 		setChecked();
+		
 		
 		flipbox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
             
@@ -102,6 +109,23 @@ public class OptionActivity extends Activity {
             }
         });
 		
+		autobox.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+            
+            @Override
+            public void onCheckedChanged(CompoundButton arg0, boolean arg1) {
+            	Editor edit = pref.edit();
+            	if(arg1 == true){       		
+        			edit.putBoolean(VLCApplication.AUTO, true);
+            	}else{
+        			edit.putBoolean(VLCApplication.AUTO, false); 
+        			edit.putFloat(VLCApplication.CONF_THRESH, CONF_THRESH_DEFAULT);
+        			var_text.setText(String.valueOf(CONF_THRESH_DEFAULT));
+        			
+            	}
+            	edit.commit();
+            }
+        });
+		
 		
 	}	
 	
@@ -110,6 +134,7 @@ public class OptionActivity extends Activity {
 			flipbox.setChecked(pref.getBoolean(VLCApplication.FLIP, false));
 			wifibox.setChecked(pref.getBoolean(VLCApplication.WIFI, false));
 			ethbox.setChecked(pref.getBoolean(VLCApplication.ETHERNET, true));
+			autobox.setChecked(pref.getBoolean(VLCApplication.AUTO, true));
 		
 	}
 
@@ -118,7 +143,7 @@ public class OptionActivity extends Activity {
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress,
 				boolean fromUser) {
-			var = 0.3f + progress*0.3f/seekBar.getMax();
+			var = MIN_CONF_THRESH + progress*(MIN_CONF_THRESH+1.0f)/seekBar.getMax();
 			var_text.setText(String.format("%.2f", var));
 		}
 
@@ -132,7 +157,7 @@ public class OptionActivity extends Activity {
 		public void onStopTrackingTouch(SeekBar seekBar) {
 			var = Float.parseFloat((String) var_text.getText());
 			Editor edit = pref.edit();
-			edit.putFloat(VLCApplication.MATCH_CONF, var);
+			edit.putFloat(VLCApplication.CONF_THRESH, var);
 			edit.commit();
 			
 		}

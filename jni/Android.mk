@@ -12,4 +12,5 @@ LOCAL_SRC_FILES := opencv.cpp autocalib.cpp blenders.cpp camera.cpp exposure_com
 				motion_estimators.cpp precomp.cpp seam_finders.cpp stitcher.cpp util.cpp warpers.cpp \
 				surf.cpp nonfree_init.cpp sift.cpp
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib/ -llog
+LOCAL_CFLAGS += -fopenmp
 include $(BUILD_SHARED_LIBRARY)

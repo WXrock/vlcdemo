@@ -1,5 +1,6 @@
 package com.example.vlcdemo;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -10,13 +11,18 @@ import org.videolan.vlc.util.WeakHandler;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -45,14 +51,17 @@ public class ViewActivity extends Activity {
 	private String path = null;
 	private String[] paths = null;
 	private TextView image_info;
-	private Button mbut = null;
+	private Button mStitchBut = null;
+	private Button mViewBut = null;
+	private ImageView image = null;
+	
+	private ProgressDialog dialog = null;
 	
 	private Handler mHandler = null;
-	private float mVar;
+	private float mconf_thresh;
+	private boolean isAuto;
 	
 	private static final String TAG = "ViewActivity";
-	private static int WIDTH = 2048;
-	private static int HEIGHT = 1536;
 	private CheckBoxes mBoxes = null;
 	private int chosenPic = 0;
 	private int startPos = -1;
@@ -68,9 +77,12 @@ public class ViewActivity extends Activity {
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setContentView(R.layout.view_layout);
 		
+		this.image = (ImageView) findViewById(R.id.imageView);
+		
 		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-		mVar = pref.getFloat(VLCApplication.MATCH_CONF, 0.3f);
-		Log.d(TAG,String.valueOf(mVar));
+		mconf_thresh = pref.getFloat(VLCApplication.CONF_THRESH, 1.0f);
+		isAuto = pref.getBoolean(VLCApplication.AUTO,true);
+		Log.d(TAG,String.valueOf(mconf_thresh));
 		
 		this.path = getIntent().getStringExtra("fileName");
 		if(path != null) {
@@ -90,10 +102,15 @@ public class ViewActivity extends Activity {
 
 		
 		this.image_info = (TextView) findViewById(R.id.text_image);
-		this.mbut = (Button) findViewById(R.id.proc);
+		this.mStitchBut = (Button) findViewById(R.id.proc);
+		this.mViewBut = (Button) findViewById(R.id.view);
+		this.dialog  = new ProgressDialog(this);
+		dialog.setTitle("正在拼接");
+		dialog.setMessage("please wait...");
+		dialog.setCancelable(true);
+		dialog.setIndeterminate(true);
 		
 		this.mHandler = new Handler(){
-
 			@Override
 			public void handleMessage(Message msg) {
 				switch(msg.what){
@@ -106,6 +123,9 @@ public class ViewActivity extends Activity {
 						break;
 					case 2:
 						Toast.makeText(getBaseContext(), "请选择连续的图片", Toast.LENGTH_LONG).show();
+						break;
+					case 3:
+						Toast.makeText(getBaseContext(), "请选择图片", Toast.LENGTH_LONG).show();
 						break;
 				}
 				
@@ -121,29 +141,32 @@ public class ViewActivity extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View arg1, int pos,
 					long arg3) {
-				ImageView image = (ImageView) findViewById(R.id.imageView);
-				bm_big = getBitmap(paths[pos], 4);
+				
+				bm_big = getBitmap(paths[pos], 8);
 				image.setImageBitmap(bm_big);
-				image.setAdjustViewBounds(true);
-				image.setMaxHeight(640);
-				//image.setMaxWidth(480);
 				ViewActivity.this.image_info.setText(paths[pos]);
 			}
 		});
 		
 		
-		mbut.setOnClickListener(new OnClickListener() {
+		mStitchBut.setOnClickListener(new OnClickListener() {
 			
 			@Override
 			public void onClick(View v) {
-				
+				if(mBoxes.getCnt() == 0){
+					Message msg = new Message();
+					msg.what = 3;
+					mHandler.sendMessage(msg);
+					return;
+				}
 				if(mBoxes.isLegal() == false){
 					Message msg = new Message();
 					msg.what = 2;
 					mHandler.sendMessage(msg);
 					return;
 				}
-				final ProgressDialog dialog = ProgressDialog.show(ViewActivity.this, "正在拼接 ", "please wait",true);
+				dialog.show();
+				//final ProgressDialog dialog = ProgressDialog.show(ViewActivity.this, "正在拼接 ", "please wait",true);
 				new Thread(new Runnable(){
 					private double time; 
 					private int ret;
@@ -152,8 +175,12 @@ public class ViewActivity extends Activity {
 					public void run() {
 						
 						//Log.e(TAG,mBoxes.getStart()+"TEST"+mBoxes.getCnt());
-						ret = ImageProc.proc(path,mBoxes.getStart(),mBoxes.getCnt(),mVar, WIDTH, HEIGHT);
-						dialog.dismiss();
+						if(isAuto == true)
+							mconf_thresh = OptionActivity.CONF_THRESH_DEFAULT;
+						Log.d(TAG,"start stitching,conf_thresh is "+mconf_thresh + "auto conf:"+isAuto);
+						ret = ImageProc.proc(path,mBoxes.getStart(),mBoxes.getCnt(),mconf_thresh,isAuto);
+						if(dialog.isShowing())
+							dialog.dismiss();
 						
 						Message msg = new Message();
 						if(ret == 0) {
@@ -173,6 +200,24 @@ public class ViewActivity extends Activity {
 								
 			}
 		});
+		
+		mViewBut.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				 String resultName = path+"result.jpg";
+				 File f = new File(resultName);
+				 if(f.exists()){
+					 Intent intent = new Intent();
+					 intent.setAction(android.content.Intent.ACTION_VIEW);
+					 intent.setDataAndType(Uri.parse("file://"+resultName), "image/*");
+					 startActivity(intent);
+				 }else{
+					 Toast.makeText(ViewActivity.this, "文件不存在", Toast.LENGTH_SHORT).show();
+				 }
+				
+			}
+		});
 	}
 
 	@Override
@@ -182,7 +227,9 @@ public class ViewActivity extends Activity {
 
 	}
 	
-	
+
+
+
 	public class ImageAdapter extends BaseAdapter {
 		
 		Context  context;
@@ -219,10 +266,10 @@ public class ViewActivity extends Activity {
 			
 			if(convertView==null) {
 				imageView = new ImageView(context);
-				bm_small = getBitmap(paths[position], 16);
+				bm_small = getBitmap(paths[position], 64);
 				imageView.setImageBitmap(bm_small);
-				imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-				imageView.setLayoutParams(new Gallery.LayoutParams(128, 96));
+				//imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+				imageView.setLayoutParams(new Gallery.LayoutParams(320, 240));
 			}else {
 				imageView = (ImageView) convertView;
 			}
