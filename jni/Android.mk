@@ -13,4 +13,5 @@ LOCAL_SRC_FILES := opencv.cpp autocalib.cpp blenders.cpp camera.cpp exposure_com
 				surf.cpp nonfree_init.cpp sift.cpp
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib/ -llog
 LOCAL_CFLAGS += -fopenmp
+LOCAL_LDFLAGS += -fopenmp
 include $(BUILD_SHARED_LIBRARY)

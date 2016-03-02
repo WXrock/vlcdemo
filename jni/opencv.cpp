@@ -111,9 +111,8 @@ std::string jstring2str(JNIEnv* env, jstring jstr)
 JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
 		(JNIEnv *env, jclass obj,jstring path,jint pstart,jint pnum,jfloat mconf_thresh,jboolean isAuto)
 {
-    clock_t start,finish;
-    start=clock();
-	
+        int64 start,finish;
+        start = getTickCount();
 	conf_thresh = (float)mconf_thresh;
         auto_thresh = (bool)isAuto;
 	if(preview){
@@ -152,7 +151,8 @@ JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
     vector<Size> full_img_sizes(num_images);
     double seam_work_aspect = 1;
 
-	//#pragma omp parallel for
+
+    #pragma omp parallel for
     for (int i = 0; i < num_images; ++i)
     {
         full_img[i] = imread(img_names[i]);
@@ -486,8 +486,8 @@ JNIEXPORT jint JNICALL Java_com_example_vlcdemo_ImageProc_proc
     Mat final_pic = Mat(result,R,Range::all());
     imwrite(result_name, final_pic);
 
-    finish=clock();
-    totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
+    finish=getTickCount();
+    totaltime=(double)((finish-start)/getTickFrequency());
     LOGI("TOTAL TIME IS %f\n",totaltime);
 
     //release
