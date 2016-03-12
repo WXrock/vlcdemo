@@ -30,8 +30,8 @@ using namespace cv::detail;
 #define END 220
 #define COMPOSE_MEGAPIX_PREVIEW 0.6f
 #define WORK_MEGAPIX_PREVIEW 0.6f
-#define STEP 0.15f
-#define MIN_CONF 0.3f
+#define STEP 0.05f
+#define MIN_CONF 0.6f
 
 //定义参数  
 vector<string> img_names;  
